@@ -30,7 +30,7 @@ public class Server implements Runnable {
     //Constants
     private static final int PACKET_SIZE = 2048;
     private final int MAX_ATTEMPTS = 5;
-    private boolean raw = true;
+    private boolean raw = false;
 
     //Thread
     private Thread run, manage, send, receive;
@@ -83,6 +83,15 @@ public class Server implements Runnable {
                     break;
                 case "clients":
                     printClients();
+                    break;
+                case "raw":
+                    if(raw) {
+                        raw = false;
+                        System.out.println("RAW-Modus deaktiviert!");
+                    } else {
+                        raw = true;
+                        System.out.println("RAW-Modus aktiviert!");
+                    }
                     break;
                 case "help":
                     printHelp();
