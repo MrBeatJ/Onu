@@ -23,9 +23,12 @@ public class Server implements Runnable {
     private ArrayList<UUID> removeClients = new ArrayList<UUID>();
     private ArrayList<String> clientResponse = new ArrayList<String>();
 
+    private long lastPing;
+
     //Socket
     private DatagramSocket socket;
     private int port;
+
 
     //Constants
     private static final int PACKET_SIZE = 2048;
@@ -108,6 +111,7 @@ public class Server implements Runnable {
             public void run() {
                 while(running) {
                     broadcast("/p/");
+                    lastPing = System.currentTimeMillis();
 
                     try {
                         Thread.sleep(2000);
@@ -116,12 +120,13 @@ public class Server implements Runnable {
                     }
 
                     for (UUID id : removeClients) {
-                        for(int i = 0; i < clients.size(); i++) {
+                        /*for(int i = 0; i < clients.size(); i++) {
                             if(clients.get(i).getID().equals(id)) {
                                 clients.remove(i);
                                 break;
                             }
-                        }
+                        }*/
+                        disconnect(id, true);
                     }
 
                     for (ServerClient client : clients) {
@@ -168,15 +173,25 @@ public class Server implements Runnable {
     private void process(DatagramPacket packet) {
         String data = new String(packet.getData());
         if(raw) System.out.println(data);
+
+        //j - JOIN
         if(data.startsWith("/j/")) {
             UUID id = UUID.randomUUID();
             String name = data.split("/j/|/e/")[1];
 
             clients.add(new ServerClient(id, name, packet.getAddress(), packet.getPort()));
-            System.out.println(name + " hat die Verbindung aufgebaut!");
+            System.out.println(name + " hat eine Verbindung aufgebaut!");
 
-            String msg = "/c/" + id;
+            String msg = "/j/" + id;
             send(msg, packet.getAddress(), packet.getPort());
+        }
+        //p - PING
+        else if(data.startsWith("/p/")) {
+            clientResponse.add(data.split("/p/|/e/")[1]);
+        }
+        //if data doesn't fit in the protocol
+        else {
+            System.out.println(data);
         }
     }
 
@@ -227,7 +242,7 @@ public class Server implements Runnable {
         }
         if (!existed) return;
         String message = "";
-        if (status) {
+        if (c.attempts < MAX_ATTEMPTS) {
             message = "Client " + c.getName() + " (" + c.getID() + ") @ " + c.getAddress().toString() + ":" + c.getPort() + " trennte die Verbindung!";
         } else {
             message = "Client " + c.getName() + " (" + c.getID() + ") @ " + c.getAddress().toString() + ":" + c.getPort() + " ist ausgetimed!";
@@ -237,6 +252,7 @@ public class Server implements Runnable {
 
     //prints all connected Clients
     private void printClients() {
+        clearScreen();
         System.out.println("Clients:");
         for (ServerClient client : clients) {
             System.out.println("\t"+client.getName()+"("+client.ping+"ms)\tID="+client.getID());
@@ -245,6 +261,7 @@ public class Server implements Runnable {
 
     //prints help
     private void printHelp() {
+        clearScreen();
         for (String s : help) {
             System.out.println(s);
         }
@@ -279,6 +296,11 @@ public class Server implements Runnable {
         }
 
         return helpArr;
+    }
+
+    public static void clearScreen() {
+        System.out.print("\033[H\033[2J");
+        System.out.flush();
     }
 
     //stops the server
