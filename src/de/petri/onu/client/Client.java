@@ -81,6 +81,14 @@ public class Client {
         }.start();
     }
 
+    public void close1() {
+        new Thread(() -> {
+                synchronized (socket) {
+                    socket.close();
+                }
+        }).start();
+    }
+
     public String getName() {
         return name;
     }
