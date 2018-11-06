@@ -1,0 +1,27 @@
+.root {
+    -fx-background-color: #616161;
+    -fx-font-size: 16pt;
+}
+
+.menu-button {
+    -fx-min-width: 250px;
+    -fx-min-height: 50px;
+}
+
+.menu-label {
+    -fx-font-size: 30pt;
+    -fx-font-weight: bold;
+    -fx-text-fill: #F5F5F5;
+}
+
+.LobbyPlayer-box {
+    -fx-min-width: 250px;
+    -fx-min-height: 50px;
+    -fx-background-color: red;
+}
+
+.boxLP {
+    -fx-min-width: 250px;
+    -fx-min-height: 450px;
+    -fx-background-color: yellow;
+}

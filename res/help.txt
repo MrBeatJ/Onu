@@ -1,3 +1,0 @@
-Dies sind alle Befehle:
-    stop    [Beendet den Server]
-    clients [Listet alle verbundenen Clients auf]

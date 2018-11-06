@@ -1,6 +1,7 @@
 package de.petri.onu.server;
 
 import de.petri.onu.game.GameState;
+import de.petri.onu.helper.MessageConverter;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -29,11 +30,13 @@ public class Server implements Runnable {
     private DatagramSocket socket;
     private int port;
 
+    //Helper
+    MessageConverter mc;
 
     //Constants
     private static final int PACKET_SIZE = 2048;
     private final int MAX_ATTEMPTS = 5;
-    private boolean raw = false;
+    private boolean raw = true;
 
     //Thread
     private Thread run, manage, send, receive;
@@ -49,7 +52,7 @@ public class Server implements Runnable {
     //constructor
     public Server(int port) {
         gs = GameState.SETUP;
-        System.out.println("Starte den Server...");
+        System.out.println("Starting the server...");
 
         this.port = port;
         try {
@@ -58,6 +61,8 @@ public class Server implements Runnable {
             e.printStackTrace();
             return;
         }
+
+        mc = new MessageConverter();
 
         help = loadHelp();
 
@@ -68,7 +73,7 @@ public class Server implements Runnable {
     @Override
     public void run() {
         running = true;
-        System.out.println("Server läuft auf port " + port + "!");
+        System.out.println("Server is running on port " + port + "!");
 
         //starts Threads for managing all connected clients ie. checking for timeouts
         manageClients();
@@ -76,9 +81,12 @@ public class Server implements Runnable {
         //starts Thread for handling incoming data packets
         receive();
 
+        //sets GameState to Lobby so players can join
+        gs = GameState.LOBBY;
+
         Scanner s = new Scanner(System.in);
         while(running) {
-            String input = s.nextLine();
+            String input = s.nextLine().toLowerCase();
 
             switch(input) {
                 case "stop":
@@ -90,10 +98,10 @@ public class Server implements Runnable {
                 case "raw":
                     if(raw) {
                         raw = false;
-                        System.out.println("RAW-Modus deaktiviert!");
+                        System.out.println("RAW-mode activated");
                     } else {
                         raw = true;
-                        System.out.println("RAW-Modus aktiviert!");
+                        System.out.println("RAW-mode disabled!");
                     }
                     break;
                 case "help":
@@ -102,7 +110,7 @@ public class Server implements Runnable {
             }
         }
 
-        System.out.println("Server ist beendet!");
+        System.out.println("Server is stopped!");
     }
 
     private void manageClients() {
@@ -110,7 +118,10 @@ public class Server implements Runnable {
             @Override
             public void run() {
                 while(running) {
-                    broadcast("/p/");
+                    broadcast(mc.tagged("", "ping"));
+                    for (ServerClient client : clients) {
+                        client.lastTime = System.currentTimeMillis();
+                    }
                     lastPing = System.currentTimeMillis();
 
                     try {
@@ -120,13 +131,7 @@ public class Server implements Runnable {
                     }
 
                     for (UUID id : removeClients) {
-                        /*for(int i = 0; i < clients.size(); i++) {
-                            if(clients.get(i).getID().equals(id)) {
-                                clients.remove(i);
-                                break;
-                            }
-                        }*/
-                        disconnect(id, true);
+                        disconnect(id);
                     }
 
                     for (ServerClient client : clients) {
@@ -174,25 +179,62 @@ public class Server implements Runnable {
         String data = new String(packet.getData());
         if(raw) System.out.println(data);
 
-        //j - JOIN
-        if(data.startsWith("/j/")) {
-            UUID id = UUID.randomUUID();
-            String name = data.split("/j/|/e/")[1];
+        //JOIN
+        if(data.startsWith("<join>")) {
+            if(gs == GameState.LOBBY) {
+                UUID id = UUID.randomUUID();
+                String name = mc.getBetweenTag(mc.getBetweenTag(data, "join")[0], "name")[0];
 
-            clients.add(new ServerClient(id, name, packet.getAddress(), packet.getPort()));
-            System.out.println(name + " hat eine Verbindung aufgebaut!");
+                clients.add(new ServerClient(id, name, packet.getAddress(), packet.getPort()));
+                System.out.println(name + " has connected to the server!");
 
-            String msg = "/j/" + id;
-            send(msg, packet.getAddress(), packet.getPort());
+                //sends client specific data
+                String msg = mc.tagged(mc.tagged(name, "name") + mc.tagged(id.toString() , "id") + getClientsNameTagged(),"join");
+                send(msg, packet.getAddress(), packet.getPort());
+
+                //sends the information to all clients
+                msg = mc.tagged(mc.tagged(name, "name"), "add");
+                broadcast(msg);
+            } else {
+                String msg = mc.tagged(mc.tagged("", "error"), "join");
+                send(msg, packet.getAddress(), packet.getPort());
+            }
         }
-        //p - PING
-        else if(data.startsWith("/p/")) {
-            clientResponse.add(data.split("/p/|/e/")[1]);
+        //PING
+        else if(data.startsWith("<ping>")) {
+            String id = mc.getBetweenTag(mc.getBetweenTag(data, "ping")[0], "id")[0];
+            for (ServerClient client : clients) {
+                if(client.getID().equals(id)) {
+                    client.ping = (int) (System.currentTimeMillis() - lastPing);
+                }
+            }
+            clientResponse.add(id);
+        }
+        //LEAVE
+        else if(data.startsWith("<leave>")) {
+            String id = mc.getBetweenTag(data, "leave")[0];
+            disconnect(UUID.fromString(id));
         }
         //if data doesn't fit in the protocol
         else {
             System.out.println(data);
         }
+    }
+
+    private String getClientsNameTagged() {
+        String names = "";
+        for (ServerClient client : clients) {
+            names += mc.tagged(client.getName(), "cName");
+        }
+        return names;
+    }
+
+    private String getClientsPingTagged() {
+        String pings = "";
+        for (ServerClient client : clients) {
+            pings += mc.tagged(String.valueOf(client.ping), "ping");
+        }
+        return pings;
     }
 
     private void sendUpdate() {
@@ -209,16 +251,13 @@ public class Server implements Runnable {
 
     //sends a message to a specific address & port
     private void send(String message, InetAddress address, int port) {
-        message += "/e/";
         send(message.getBytes(), address, port);
     }
 
-    //sends a byte[] to a specific address & port
-    private void send(final byte[] data, final InetAddress address, final int port) {
+    public void send(final byte[] data, InetAddress address, int port) {
         send = new Thread("Send") {
             public void run() {
-                DatagramPacket packet = new DatagramPacket(data,  data.length,address, port);
-
+                DatagramPacket packet = new DatagramPacket(data, data.length, address, port);
                 try {
                     socket.send(packet);
                 } catch (IOException e) {
@@ -226,14 +265,15 @@ public class Server implements Runnable {
                 }
             }
         };
+        send.start();
     }
 
     //disconnects a client
-    private void disconnect(UUID id, boolean status) {
+    private void disconnect(UUID id) {
         ServerClient c = null;
         boolean existed = false;
         for (int i = 0; i < clients.size(); i++) {
-            if (clients.get(i).getID() == id) {
+            if (clients.get(i).getID().equals(id)) {
                 c = clients.get(i);
                 clients.remove(i);
                 existed = true;
@@ -243,9 +283,9 @@ public class Server implements Runnable {
         if (!existed) return;
         String message = "";
         if (c.attempts < MAX_ATTEMPTS) {
-            message = "Client " + c.getName() + " (" + c.getID() + ") @ " + c.getAddress().toString() + ":" + c.getPort() + " trennte die Verbindung!";
+            message = "Client " + c.getName() + " (" + c.getID() + ") @ " + c.getAddress().toString() + ":" + c.getPort() + " closed the connection!";
         } else {
-            message = "Client " + c.getName() + " (" + c.getID() + ") @ " + c.getAddress().toString() + ":" + c.getPort() + " ist ausgetimed!";
+            message = "Client " + c.getName() + " (" + c.getID() + ") @ " + c.getAddress().toString() + ":" + c.getPort() + " timed out!";
         }
         System.out.println(message);
     }
@@ -305,7 +345,7 @@ public class Server implements Runnable {
 
     //stops the server
     private void stop() {
-        System.out.println("Server fährt herunter...");
+        System.out.println("Server is shutting down...");
 
         gs = GameState.END;
         running = false;

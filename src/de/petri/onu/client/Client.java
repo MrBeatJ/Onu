@@ -11,7 +11,8 @@ public class Client {
     //Socket
     private DatagramSocket socket;
 
-    private String name, address;
+    public String name;
+    private String address;
     private int port = 9000;
 
     private InetAddress ip;
@@ -31,7 +32,7 @@ public class Client {
     }
 
     //opens a connection with the Server
-    public boolean openConnection(String address) {
+    public boolean openConnection() {
         try {
             socket = new DatagramSocket();
             ip = InetAddress.getByName(address);
@@ -71,6 +72,10 @@ public class Client {
         send.start();
     }
 
+    public void send(String message) {
+        send(message.getBytes());
+    }
+
     public void close() {
         new Thread() {
             public void run() {
@@ -79,18 +84,6 @@ public class Client {
                 }
             }
         }.start();
-    }
-
-    public void close1() {
-        new Thread(() -> {
-                synchronized (socket) {
-                    socket.close();
-                }
-        }).start();
-    }
-
-    public String getName() {
-        return name;
     }
 
     public String getAddress() {

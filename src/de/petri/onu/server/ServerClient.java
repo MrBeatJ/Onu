@@ -14,6 +14,7 @@ public class ServerClient {
     private int port;
 
     public int ping;
+    public long lastTime;
     public int attempts = 0;
 
     //Game
@@ -24,6 +25,8 @@ public class ServerClient {
         this.name = name;
         this.address = address;
         this.port = port;
+
+        lastTime = System.currentTimeMillis();
 
         hand = new Hand();
     }

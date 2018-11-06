@@ -1,0 +1,4 @@
+All commands:
+    stop    [stops the server]
+    clients [lists all clients]
+    raw     [enables/disables RAW-mode]
