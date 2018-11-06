@@ -10,6 +10,7 @@ public class Client {
 
     //Socket
     private DatagramSocket socket;
+    private final int TIMEOUT = 10000;
 
     public String name;
     private String address;
@@ -20,7 +21,7 @@ public class Client {
     private final int PACKET_SIZE = 2048;
 
     //Thread
-    private Thread send;
+    private Thread send, close;
 
     //ID
     private UUID id;
@@ -35,6 +36,7 @@ public class Client {
     public boolean openConnection() {
         try {
             socket = new DatagramSocket();
+            socket.setSoTimeout(TIMEOUT);
             ip = InetAddress.getByName(address);
         } catch (SocketException e) {
             e.printStackTrace();
@@ -51,6 +53,8 @@ public class Client {
         DatagramPacket packet = new DatagramPacket(data, data.length);
         try {
             socket.receive(packet);
+        } catch (SocketException e) {
+
         } catch (IOException e) {
             e.printStackTrace();
         }

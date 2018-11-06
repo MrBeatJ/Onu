@@ -212,8 +212,20 @@ public class Server implements Runnable {
         }
         //LEAVE
         else if(data.startsWith("<leave>")) {
-            String id = mc.getBetweenTag(data, "leave")[0];
-            disconnect(UUID.fromString(id));
+            //gets the id
+            UUID id = UUID.fromString(mc.getBetweenTag(data, "leave")[0]);
+
+            //gets name from player with right id
+            String name = "";
+            for (ServerClient client : clients) {
+                if(client.getID().equals(id)) name = client.getName();
+            }
+
+            //disconnects the player
+            disconnect(id);
+
+            //sends the leave command to all players
+            broadcast(mc.tagged(mc.tagged(name, "name"), "leave"));
         }
         //if data doesn't fit in the protocol
         else {
@@ -235,6 +247,10 @@ public class Server implements Runnable {
             pings += mc.tagged(String.valueOf(client.ping), "ping");
         }
         return pings;
+    }
+
+    private void setAdmin() {
+
     }
 
     private void sendUpdate() {

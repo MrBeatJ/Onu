@@ -11,10 +11,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import javax.swing.*;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Scanner;
 
 public class Main extends Application {
@@ -27,6 +24,10 @@ public class Main extends Application {
 
     public static final int WIDTH = 800;
     public static final int HEIGHT = 600;
+
+    private Process serverProc;
+    private Thread watch;
+    private static BufferedReader wReader;
 
     public static OutputStream out;
     public static InputStream in;
@@ -69,7 +70,12 @@ public class Main extends Application {
         btnLobby.getStyleClass().add("menu-button");
         btnLobby.setOnAction(e -> {
             startServer();
-            game = new Game(window, "Admin", "localhost");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
+            game = new Game(window, "Admin", "127.0.0.1");
             window.setScene(game.getLobby());
         });
 
@@ -98,18 +104,16 @@ public class Main extends Application {
             stopServer();
         }
 
-        Process proc = null;
         try {
-            proc = Runtime.getRuntime().exec("java -jar src/de/petri/onu/client/Onu.jar 9000");
+            serverProc = Runtime.getRuntime().exec("cmd /c java -jar src/de/petri/onu/client/Onu.jar 9000");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        out = proc.getOutputStream();
-        in = proc.getInputStream();
+        out = serverProc.getOutputStream();
+        in = serverProc.getInputStream();
 
-        Scanner s = new Scanner(in);
-        PrintWriter w = new PrintWriter(out);
+        watchProc(serverProc);
 
         runningServer = true;
     }
@@ -122,10 +126,28 @@ public class Main extends Application {
             }
     }
 
+    private void watchProc(final Process process) {
+        watch = new Thread() {
+            public void run() {
+                wReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line = null;
+                try {
+                    while ((line = wReader.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        watch.start();
+    }
+
     private void stopServer() {
         if(runningServer) {
             String cmd = "stop";
             try {
+                wReader.close();
                 out.write(cmd.getBytes());
                 out.flush();
                 in.close();

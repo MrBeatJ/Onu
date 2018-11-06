@@ -16,6 +16,7 @@ public class Game extends Scene {
 
     //Client
     Client client;
+    private boolean admin;
 
     Thread listen;
     boolean running = false;
@@ -96,6 +97,10 @@ public class Game extends Scene {
                 addPlayer(name);
             }
         }
+        //LEAVE
+        else if(message.startsWith("<leave>")) {
+            removePlayer(mc.getBetweenTag(mc.getBetweenTag(message, "leave")[0], "name")[0]);
+        }
     }
 
     private void addPlayer(String name) {
@@ -109,11 +114,24 @@ public class Game extends Scene {
         });
     }
 
+    private void removePlayer(String name) {
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                lobby.removePlayer(name);
+            }
+        });
+        for (GamePlayer player : players) {
+            if(player.getName().equals(name)) players.remove(player);
+        }
+    }
+
     public Lobby getLobby() {
         return lobby;
     }
 
     public void leave() {
+        close();
         window.setScene(Main.getMenu());
     }
 
