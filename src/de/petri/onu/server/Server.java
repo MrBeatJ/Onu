@@ -26,6 +26,8 @@ public class Server implements Runnable {
 
     private long lastPing;
 
+    private UUID admin;
+
     //Socket
     private DatagramSocket socket;
     private int port;
@@ -185,6 +187,21 @@ public class Server implements Runnable {
                 UUID id = UUID.randomUUID();
                 String name = mc.getBetweenTag(mc.getBetweenTag(data, "join")[0], "name")[0];
 
+                //checks & updates playername if already existing
+                String newName = name;
+                for (int i = 2; i <= clients.size() + 1; i++) {
+                    boolean contains = false;
+                    for (ServerClient client : clients) {
+                        if (newName.equals(client.getName())) {
+                            contains = true;
+                        }
+                    }
+                    if(!contains) break;
+
+                    newName = name + i;
+                }
+                name = newName;
+
                 clients.add(new ServerClient(id, name, packet.getAddress(), packet.getPort()));
                 System.out.println(name + " has connected to the server!");
 
@@ -195,6 +212,8 @@ public class Server implements Runnable {
                 //sends the information to all clients
                 msg = mc.tagged(mc.tagged(name, "name"), "add");
                 broadcast(msg);
+
+                setAdmin(id);
             } else {
                 String msg = mc.tagged(mc.tagged("", "error"), "join");
                 send(msg, packet.getAddress(), packet.getPort());
@@ -214,6 +233,10 @@ public class Server implements Runnable {
         else if(data.startsWith("<leave>")) {
             //gets the id
             UUID id = UUID.fromString(mc.getBetweenTag(data, "leave")[0]);
+
+            if(id.equals(admin)) {
+                setAdmin(clients.get(0).getID());
+            }
 
             //gets name from player with right id
             String name = "";
@@ -249,8 +272,18 @@ public class Server implements Runnable {
         return pings;
     }
 
-    private void setAdmin() {
+    //sets a client to Admin
+    private void setAdmin(UUID clientID) {
+        ServerClient newAdmin = null;
+        for (ServerClient client : clients) {
+            if(client.getID().equals(clientID)) {
+                newAdmin = client;
+                break;
+            }
+        }
 
+        broadcast(mc.tagged(mc.tagged(newAdmin.getName(), "name"), "admin"));
+        admin = newAdmin.getID();
     }
 
     private void sendUpdate() {
