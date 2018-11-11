@@ -55,6 +55,7 @@ public class Lobby extends Scene {
         });
 
         btnStart = new Button("Start");
+        btnStart.setDisable(true);
         btnStart.setOnAction(e -> {
             game.start();
         });
@@ -83,6 +84,14 @@ public class Lobby extends Scene {
     public void updatePlayers(int[] ping) {
         for (int i = 0; i < ping.length; i++) {
             players.get(i).setPing(ping[i]);
+        }
+    }
+
+    public void setAdmin(boolean isAdmin) {
+        if(isAdmin) {
+            btnStart.setDisable(false);
+        } else {
+            btnStart.setDisable(true);
         }
     }
 

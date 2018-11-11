@@ -213,7 +213,9 @@ public class Server implements Runnable {
                 msg = mc.tagged(mc.tagged(name, "name"), "add");
                 broadcast(msg);
 
-                setAdmin(id);
+                if(clients.size() <= 1) {
+                    setAdmin(id);
+                }
             } else {
                 String msg = mc.tagged(mc.tagged("", "error"), "join");
                 send(msg, packet.getAddress(), packet.getPort());
@@ -234,10 +236,6 @@ public class Server implements Runnable {
             //gets the id
             UUID id = UUID.fromString(mc.getBetweenTag(data, "leave")[0]);
 
-            if(id.equals(admin)) {
-                setAdmin(clients.get(0).getID());
-            }
-
             //gets name from player with right id
             String name = "";
             for (ServerClient client : clients) {
@@ -247,8 +245,17 @@ public class Server implements Runnable {
             //disconnects the player
             disconnect(id);
 
+            //sets Admin
+            if(id.equals(admin)) {
+                setAdmin(clients.get(0).getID());
+            }
+
             //sends the leave command to all players
             broadcast(mc.tagged(mc.tagged(name, "name"), "leave"));
+        }
+        //START
+        else if() {
+
         }
         //if data doesn't fit in the protocol
         else {

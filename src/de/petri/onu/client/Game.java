@@ -101,6 +101,14 @@ public class Game extends Scene {
         else if(message.startsWith("<leave>")) {
             removePlayer(mc.getBetweenTag(mc.getBetweenTag(message, "leave")[0], "name")[0]);
         }
+        //ADMIN
+        else if(message.startsWith("<admin>")) {
+            if(mc.getBetweenTag(mc.getBetweenTag(message, "admin")[0], "name")[0].equals(client.name)) {
+                setAdmin(true);
+            } else {
+                setAdmin(false);
+            }
+        }
     }
 
     private void addPlayer(String name) {
@@ -112,6 +120,28 @@ public class Game extends Scene {
                 lobby.addPlayer(name, 0);
             }
         });
+    }
+
+    private void setAdmin(boolean isAdmin) {
+        if(isAdmin) {
+            admin = true;
+
+            Platform.runLater(new Runnable() {
+                @Override
+                public void run() {
+                    lobby.setAdmin(true);
+                }
+            });
+        } else {
+            admin = false;
+
+            Platform.runLater(new Runnable() {
+                @Override
+                public void run() {
+                    lobby.setAdmin(false);
+                }
+            });
+        }
     }
 
     private void removePlayer(String name) {
@@ -137,10 +167,9 @@ public class Game extends Scene {
 
     public void start() {
         //send start command to server
+        client.send(mc.tagged("", "start"));
 
-        //fetch starting game data
-
-        //display data
+        //display game
         window.setScene(this);
     }
 
