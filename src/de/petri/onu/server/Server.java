@@ -268,6 +268,10 @@ public class Server implements Runnable {
     }
     
     private void startGame() {
+        gs = GameState.GAME;
+        
+        broadcast(mc.tagged("", "gamestart"));
+        
         piles[] = new Pile[2];
         
         //loads the drawing stack
@@ -286,15 +290,16 @@ public class Server implements Runnable {
             for(Card card : cards) {
                 sendCard(client, card);   
             }
+            broadcast(mc.tagged(mc.tagged(client.getName(), "name") + mc.tagged(client.getHand().getCount(), "count"), "addplayer"));
         }
         
         //creates the put stack
         pile[1] = new Pile();
         pile[1].push(pile[0].pop());
     }
-
+    
     private void sendCard(ServerClient client, Card card) {
-        String msg = mc.tagged(card.toString(), "addCard");
+        String msg = mc.tagged(card.toString(), "addcard");
         send(msg, client.getAddress(), client.getPort());
     }
     
