@@ -15,6 +15,10 @@ public class Hand {
     public Card removeCard(int index) {
         return cards.remove(index);
     }
+    
+    public void removeCard(Card card) {
+        cards.remove(card);
+    }
 
     //gives back the amount of cards left in the hand
     public int getCount() {
