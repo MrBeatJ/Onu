@@ -4,6 +4,8 @@ public class Card {
 
     private Color color;
     private Value value;
+    
+    private String text;
 
     public Card(Color color, Value value) {
         this.color = color;
@@ -16,6 +18,8 @@ public class Card {
 
         this.color = getColorFromString(color);
         this.value = getValueFromString(value);
+        
+        text = card;
     }
 
     private Color getColorFromString(String color) {
@@ -64,6 +68,10 @@ public class Card {
                 return Value.SWITCH;
         }
         return null;
+    }
+    
+    public String toString() {
+        return text;   
     }
 
     public Color getColor() {
