@@ -344,6 +344,10 @@ public class Server implements Runnable {
             message = "Client " + c.getName() + " (" + c.getID() + ") @ " + c.getAddress().toString() + ":" + c.getPort() + " timed out!";
         }
         System.out.println(message);
+        
+        if(clients.size() <= 0) {
+            stop();
+        }
     }
 
     //prints all connected Clients
