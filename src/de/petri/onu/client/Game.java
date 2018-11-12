@@ -7,6 +7,9 @@ import javafx.event.EventHandler;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
@@ -28,6 +31,8 @@ public class Game extends Scene {
     Lobby lobby;
 
     //Game
+    Hand hand;
+    ArrayList<GuiCard> guiCards;
     ArrayList<GamePlayer> players = new ArrayList<GamePlayer>();
 
     public Game(Stage window, String name, String address) {
@@ -59,7 +64,7 @@ public class Game extends Scene {
 
                 System.out.println(message);
 
-                if(running) process(message);
+                if(running) process(message.toLowerCase());
             }
         });
         listen.start();
@@ -109,6 +114,34 @@ public class Game extends Scene {
                 setAdmin(false);
             }
         }
+        //- GAME -\\
+        //START
+        else if(message.startsWith("<start>") {
+            startGame();   
+        }
+        //ADD_CARD
+        else if(message.startsWith("<addcard>")) {
+            addCard(new Card(mc.getBetweenTag(message, "addCard"));
+        }
+    }
+    
+    private void startGame() {
+        guiCards = new ArrayList<GuiCard>();   
+    }
+                    
+    private void addCard(Card card) {
+        hand.push(card);
+        
+        guiCards.add(new GuiCard(card));
+    }
+                    
+    private void removeCard(Card card) {
+        for(GuiCard guiCard : guiCards) {
+            if(guiCard.getText().equals(card.toString()) {
+                guiCards.remove(guiCard);   
+            }
+        }
+        hand.remove(card);
     }
 
     private void addPlayer(String name) {
@@ -180,5 +213,32 @@ public class Game extends Scene {
         running = false;
     }
 
+    private class GuiCard extends GridPane {
+        String text, color;
+        
+        Label lblText;
+        Button btnPick;
+        
+        public GuiCard(Card card) {
+            text = card.getString();
+            color = #000000;
+            
+            lblText = new Label(text);
+            lblText.getStyleClass().add("GuiCard-text");
+            GridPane.setConstraints(lblText, 0,0);
+            
+            btnPick = new Button("Pick");
+            btnPick.getStyleClass().add("GuiCard-pick");
+            GridPane.setConstraints(btnPick, 1,0);
+            
+            getChildren().addAll(lblText, btnPick);
+        }
+        
+        public String getText() {
+            return text;   
+        }
+    }
+                    
+          
 
 }
