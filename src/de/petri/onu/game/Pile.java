@@ -26,4 +26,8 @@ public class Pile {
     public void shuffle() {
         Collections.shuffle(cards);
     }
+    
+    public static Pile loadFromText(File file) {
+           
+    }
 }
