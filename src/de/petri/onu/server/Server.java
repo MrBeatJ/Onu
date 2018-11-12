@@ -45,10 +45,14 @@ public class Server implements Runnable {
     private boolean running;
 
     //Console
-    String[] help;
+    private String[] help;
 
     //--GAME--\\
-    GameState gs;
+    private GameState gs;
+    
+    private Pile[] piles;
+    private int startAmount = 7;
+    
 
 
     //constructor
@@ -254,15 +258,46 @@ public class Server implements Runnable {
             broadcast(mc.tagged(mc.tagged(name, "name"), "leave"));
         }
         //START
-        else if() {
-
+        else if(data.startsWith("<start>")) {
+            startGame();
         }
         //if data doesn't fit in the protocol
         else {
             System.out.println(data);
         }
     }
+    
+    private void startGame() {
+        piles[] = new Pile[2];
+        
+        //loads the drawing stack
+        pile[0] = Pile.loadFromText();
+        pile[0].shuffle();
+        
+        //adds 7 cards to all players
+        for(ServerClient client : clients) {
+            for(int i = 0; i < startAmount; i++) {
+                client.getHand().push(pile[0].pop());
+            }
+        }
+        
+        for(ServerClient client : clients) {
+            Card[] cards = client.getHand().getCards();
+            for(Card card : cards) {
+                sendCard(client, card);   
+            }
+        }
+        
+        //creates the put stack
+        pile[1] = new Pile();
+        pile[1].push(pile[0].pop());
+    }
 
+    private void sendCard(ServerClient client, Card card) {
+        String msg = mc.tagged(card.toString(), "addCard");
+        send(msg, client.getAddress(), client.getPort());
+    }
+    
     private String getClientsNameTagged() {
         String names = "";
         for (ServerClient client : clients) {
