@@ -47,7 +47,7 @@ public class ServerClient {
         return port;
     }
     
-    publiv Hand getHand() {
+    public Hand getHand() {
         return hand;   
     }
 

@@ -1,5 +1,7 @@
 package de.petri.onu.game;
 
+import java.io.*;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Stack;
 
@@ -28,6 +30,30 @@ public class Pile {
     }
     
     public static Pile loadFromText(File file) {
-           
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(file));
+
+            ArrayList<String> cards = new ArrayList<String>();
+            String line;
+            while ((line = br.readLine()) != null) {
+                if(!line.startsWith("//")) {
+                    cards.add(line);
+                }
+            }
+
+            Pile pile = new Pile();
+            for (String card : cards) {
+                pile.push(new Card(card));
+            }
+
+            return pile;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

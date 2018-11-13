@@ -32,6 +32,8 @@ public class Card {
                 return Color.RED;
             case "y":
                 return Color.YELLOW;
+            case "n":
+                return Color.NONE;
         }
         return null;
     }

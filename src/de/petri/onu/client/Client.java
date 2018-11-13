@@ -10,7 +10,7 @@ public class Client {
 
     //Socket
     private DatagramSocket socket;
-    private final int TIMEOUT = 10000;
+    private final int TIMEOUT = 5000;
 
     public String name;
     private String address;

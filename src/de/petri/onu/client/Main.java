@@ -26,8 +26,8 @@ public class Main extends Application {
     public static final int HEIGHT = 600;
 
     private Process serverProc;
-    private Thread watch;
-    private static BufferedReader wReader;
+    private Thread watch, watchError;
+    private static BufferedReader wReader, eReader;
 
     public static OutputStream out;
     public static InputStream in;
@@ -114,6 +114,7 @@ public class Main extends Application {
         in = serverProc.getInputStream();
 
         watchProc(serverProc);
+        errorProc(serverProc);
 
         runningServer = true;
     }
@@ -126,9 +127,28 @@ public class Main extends Application {
             }
     }
 
+    private void errorProc(final Process process) {
+        watchError = new Thread() {
+            public void run() {
+                this.setName("watchError");
+                eReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                String line = null;
+                try {
+                    while ((line = eReader.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        watchError.start();
+    }
+
     private void watchProc(final Process process) {
         watch = new Thread() {
             public void run() {
+                this.setName("watchProc");
                 wReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 String line = null;
                 try {

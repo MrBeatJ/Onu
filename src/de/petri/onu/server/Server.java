@@ -1,12 +1,11 @@
 package de.petri.onu.server;
 
+import de.petri.onu.game.Card;
 import de.petri.onu.game.GameState;
+import de.petri.onu.game.Pile;
 import de.petri.onu.helper.MessageConverter;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -36,9 +35,12 @@ public class Server implements Runnable {
     MessageConverter mc;
 
     //Constants
+    public static final String PATH = "de/petri/onu/";
     private static final int PACKET_SIZE = 2048;
     private final int MAX_ATTEMPTS = 5;
+
     private boolean raw = true;
+    private boolean rawPing = false;
 
     //Thread
     private Thread run, manage, send, receive;
@@ -53,8 +55,6 @@ public class Server implements Runnable {
     private Pile[] piles;
     private int startAmount = 7;
     
-
-
     //constructor
     public Server(int port) {
         gs = GameState.SETUP;
@@ -183,7 +183,13 @@ public class Server implements Runnable {
     //processes a received packet
     private void process(DatagramPacket packet) {
         String data = new String(packet.getData());
-        if(raw) System.out.println(data);
+        if(raw) {
+            if(data.startsWith("<ping>")) {
+                if(rawPing) System.out.println(data);
+            } else {
+                System.out.println(data);
+            }
+        }
 
         //JOIN
         if(data.startsWith("<join>")) {
@@ -263,39 +269,46 @@ public class Server implements Runnable {
         }
         //if data doesn't fit in the protocol
         else {
-            System.out.println(data);
+            System.out.println("ERROR: " + data);
         }
     }
     
     private void startGame() {
         gs = GameState.GAME;
+
+        broadcast(mc.tagged("", "start"));
         
-        broadcast(mc.tagged("", "gamestart"));
-        
-        piles[] = new Pile[2];
-        
+        piles = new Pile[2];
+
         //loads the drawing stack
-        pile[0] = Pile.loadFromText();
-        pile[0].shuffle();
-        
+        File cardsFile = new File("C:/Users/Maximilian/Desktop/Onu/src/de/petri/onu/game/cards.txt");
+        piles[0] = Pile.loadFromText(cardsFile);
+        piles[0].shuffle();
+
+        //PATH + "game/cards.txt"
         //adds 7 cards to all players
         for(ServerClient client : clients) {
             for(int i = 0; i < startAmount; i++) {
-                client.getHand().push(pile[0].pop());
+                client.getHand().addCard(piles[0].pop());
             }
         }
-        
+
         for(ServerClient client : clients) {
             Card[] cards = client.getHand().getCards();
             for(Card card : cards) {
-                sendCard(client, card);   
+                sendCard(client, card);
+                try {
+                    Thread.sleep(20);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-            broadcast(mc.tagged(mc.tagged(client.getName(), "name") + mc.tagged(client.getHand().getCount(), "count"), "addplayer"));
+            //broadcast(mc.tagged(mc.tagged(client.getName(), "name") + mc.tagged(String.valueOf(client.getHand().getCount()), "count"), "addplayer"));
         }
-        
+
         //creates the put stack
-        pile[1] = new Pile();
-        pile[1].push(pile[0].pop());
+        piles[1] = new Pile();
+        piles[1].push(piles[0].pop());
     }
     
     private void sendCard(ServerClient client, Card card) {

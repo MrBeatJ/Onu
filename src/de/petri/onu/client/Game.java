@@ -1,24 +1,31 @@
 package de.petri.onu.client;
 
+import de.petri.onu.game.Card;
+import de.petri.onu.game.Hand;
 import de.petri.onu.helper.MessageConverter;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.UUID;
 
 public class Game extends Scene {
 
     //Client
-    Client client;
+    private Client client;
     private boolean admin;
 
     Thread listen;
@@ -27,17 +34,26 @@ public class Game extends Scene {
     MessageConverter mc;
 
     //Gui
-    Stage window;
-    Lobby lobby;
+    private Stage window;
+    private Lobby lobby;
+
+    private final GridPane layout;
+
+    HBox hBoxHand;
 
     //Game
     Hand hand;
-    ArrayList<GuiCard> guiCards;
+    LinkedList<GuiCard> guiCards;
     ArrayList<GamePlayer> players = new ArrayList<GamePlayer>();
 
     public Game(Stage window, String name, String address) {
         super(new StackPane(), Main.WIDTH, Main.HEIGHT);
         this.window = window;
+
+        layout = new GridPane();
+        layout.setAlignment(Pos.TOP_CENTER);
+        layout.setPadding(new Insets(30,10,10,10));
+        setRoot(layout);
 
         lobby = new Lobby(window, this);
 
@@ -64,7 +80,7 @@ public class Game extends Scene {
 
                 System.out.println(message);
 
-                if(running) process(message.toLowerCase());
+                if(running) process(message);
             }
         });
         listen.start();
@@ -116,32 +132,56 @@ public class Game extends Scene {
         }
         //- GAME -\\
         //START
-        else if(message.startsWith("<start>") {
-            startGame();   
+        else if(message.startsWith("<start>")) {
+            startGame();
         }
         //ADD_CARD
         else if(message.startsWith("<addcard>")) {
-            addCard(new Card(mc.getBetweenTag(message, "addCard"));
+            addCard(new Card(mc.getBetweenTag(message, "addcard")[0]));
         }
     }
     
     private void startGame() {
-        guiCards = new ArrayList<GuiCard>();   
+        Game g = this;
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                window.setScene(g);
+            }
+        });
+
+        hand = new Hand();
+        guiCards = new LinkedList<GuiCard>();
+
+        hBoxHand = new HBox();
+
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                layout.getChildren().addAll(hBoxHand);
+            }
+        });
     }
                     
     private void addCard(Card card) {
-        hand.push(card);
-        
+        hand.addCard(card);
         guiCards.add(new GuiCard(card));
+
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                hBoxHand.getChildren().add(guiCards.getLast());
+            }
+        });
     }
                     
     private void removeCard(Card card) {
         for(GuiCard guiCard : guiCards) {
-            if(guiCard.getText().equals(card.toString()) {
+            if(guiCard.getText().equals(card.toString())) {
                 guiCards.remove(guiCard);   
             }
         }
-        hand.remove(card);
+        hand.removeCard(card);
     }
 
     private void addPlayer(String name) {
@@ -201,9 +241,6 @@ public class Game extends Scene {
     public void start() {
         //send start command to server
         client.send(mc.tagged("", "start"));
-
-        //display game
-        window.setScene(this);
     }
 
     public void close() {
@@ -220,8 +257,8 @@ public class Game extends Scene {
         Button btnPick;
         
         public GuiCard(Card card) {
-            text = card.getString();
-            color = #000000;
+            text = card.toString();
+            color = "#000000";
             
             lblText = new Label(text);
             lblText.getStyleClass().add("GuiCard-text");
@@ -229,7 +266,7 @@ public class Game extends Scene {
             
             btnPick = new Button("Pick");
             btnPick.getStyleClass().add("GuiCard-pick");
-            GridPane.setConstraints(btnPick, 1,0);
+            GridPane.setConstraints(btnPick, 0,1);
             
             getChildren().addAll(lblText, btnPick);
         }
