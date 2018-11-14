@@ -1,6 +1,7 @@
 package de.petri.onu.client;
 
 import de.petri.onu.helper.MessageConverter;
+import de.petri.onu.helper.ResourceLoader;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -12,6 +13,7 @@ import javafx.stage.Stage;
 
 import javax.swing.*;
 import java.io.*;
+import java.net.URL;
 import java.util.Scanner;
 
 public class Main extends Application {
@@ -37,6 +39,7 @@ public class Main extends Application {
     //Game
     private static Game game;
     private boolean gameRunning = false;
+    private final String JAR_PATH = "/server/Onu.jar";
 
     public static void main(String[] args) {
 
@@ -75,6 +78,7 @@ public class Main extends Application {
             } catch (InterruptedException e1) {
                 e1.printStackTrace();
             }
+            System.out.println("test");
             game = new Game(window, "Admin", "127.0.0.1");
             window.setScene(game.getLobby());
         });
@@ -105,7 +109,7 @@ public class Main extends Application {
         }
 
         try {
-            serverProc = Runtime.getRuntime().exec("cmd /c java -jar src/de/petri/onu/client/Onu.jar 9000");
+            serverProc = Runtime.getRuntime().exec("cmd /c java -jar res/server/OnuServer.jar 9000");
         } catch (IOException e) {
             e.printStackTrace();
         }

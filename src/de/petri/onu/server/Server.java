@@ -4,6 +4,7 @@ import de.petri.onu.game.Card;
 import de.petri.onu.game.GameState;
 import de.petri.onu.game.Pile;
 import de.petri.onu.helper.MessageConverter;
+import de.petri.onu.helper.ResourceLoader;
 
 import java.io.*;
 import java.net.DatagramPacket;
@@ -35,7 +36,6 @@ public class Server implements Runnable {
     MessageConverter mc;
 
     //Constants
-    public static final String PATH = "de/petri/onu/";
     private static final int PACKET_SIZE = 2048;
     private final int MAX_ATTEMPTS = 5;
 
@@ -281,7 +281,7 @@ public class Server implements Runnable {
         piles = new Pile[2];
 
         //loads the drawing stack
-        File cardsFile = new File("C:/Users/Maximilian/Desktop/Onu/src/de/petri/onu/game/cards.txt");
+        InputStream cardsFile = ResourceLoader.load("game/cards.txt");
         piles[0] = Pile.loadFromText(cardsFile);
         piles[0].shuffle();
 
@@ -421,15 +421,13 @@ public class Server implements Runnable {
     }
 
     private String[] loadHelp() {
-        // The name of the file to open.
-        String fileName = "help.txt";
-
         ArrayList<String> help = new ArrayList<String>();
 
-        try {
-            FileReader fileReader = new FileReader(fileName);
+        InputStream is = ResourceLoader.load("server/help.txt");
 
-            BufferedReader bufferedReader = new BufferedReader(fileReader);
+        try {
+
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(is));
 
             String line;
             while ((line = bufferedReader.readLine()) != null) {

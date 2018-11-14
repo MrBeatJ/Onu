@@ -244,8 +244,10 @@ public class Game extends Scene {
     }
 
     public void close() {
-        String msg = mc.tagged(client.getId().toString(), "leave");
-        client.send(msg);
+        if(client.getId() != null) {
+            String msg = mc.tagged(client.getId().toString(), "leave");
+            client.send(msg);
+        }
         client.close();
         running = false;
     }

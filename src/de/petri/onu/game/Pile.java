@@ -29,10 +29,10 @@ public class Pile {
         Collections.shuffle(cards);
     }
     
-    public static Pile loadFromText(File file) {
+    public static Pile loadFromText(InputStream is) {
         BufferedReader br = null;
         try {
-            br = new BufferedReader(new FileReader(file));
+            br = new BufferedReader(new InputStreamReader(is));
 
             ArrayList<String> cards = new ArrayList<String>();
             String line;
