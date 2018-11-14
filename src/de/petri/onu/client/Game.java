@@ -2,20 +2,20 @@ package de.petri.onu.client;
 
 import de.petri.onu.game.Card;
 import de.petri.onu.game.Hand;
+import de.petri.onu.game.Value;
+import de.petri.onu.helper.CardImageHandler;
 import de.petri.onu.helper.MessageConverter;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
@@ -44,14 +44,19 @@ public class Game extends Scene {
     //Game
     Hand hand;
     LinkedList<GuiCard> guiCards;
+    static CardImageHandler cardImageHandler;
     ArrayList<GamePlayer> players = new ArrayList<GamePlayer>();
 
     public Game(Stage window, String name, String address) {
         super(new StackPane(), Main.WIDTH, Main.HEIGHT);
         this.window = window;
 
+        getStylesheets().add("gfx/css/style.css");
+
+        cardImageHandler = new CardImageHandler();
+
         layout = new GridPane();
-        layout.setAlignment(Pos.TOP_CENTER);
+        layout.setAlignment(Pos.BOTTOM_CENTER);
         layout.setPadding(new Insets(30,10,10,10));
         setRoot(layout);
 
@@ -135,9 +140,13 @@ public class Game extends Scene {
         else if(message.startsWith("<start>")) {
             startGame();
         }
-        //ADD_CARD
+        //ADDCARD
         else if(message.startsWith("<addcard>")) {
             addCard(new Card(mc.getBetweenTag(message, "addcard")[0]));
+        }
+        //REMOVECARD
+        else if(message.startsWith("<removecard>")) {
+            removeCard(new Card(mc.getBetweenTag(message, "removecard")[0]));
         }
     }
     
@@ -154,6 +163,7 @@ public class Game extends Scene {
         guiCards = new LinkedList<GuiCard>();
 
         hBoxHand = new HBox();
+        hBoxHand.setSpacing(5);
 
         Platform.runLater(new Runnable() {
             @Override
@@ -165,7 +175,7 @@ public class Game extends Scene {
                     
     private void addCard(Card card) {
         hand.addCard(card);
-        guiCards.add(new GuiCard(card));
+        guiCards.add(new GuiCard(card, this));
 
         Platform.runLater(new Runnable() {
             @Override
@@ -175,12 +185,30 @@ public class Game extends Scene {
         });
     }
                     
+    public void pickCard(Card card) {
+        String msg = mc.tagged(mc.tagged(client.name, "name") + mc.tagged(card.toString(), "card"), "putcard");
+        client.send(msg);
+    }
+
     private void removeCard(Card card) {
         for(GuiCard guiCard : guiCards) {
             if(guiCard.getText().equals(card.toString())) {
-                guiCards.remove(guiCard);   
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        hBoxHand.getChildren().remove(guiCard);
+                    }
+                });
+                guiCards.remove(guiCard);
+                break;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
+
         hand.removeCard(card);
     }
 
@@ -251,33 +279,5 @@ public class Game extends Scene {
         client.close();
         running = false;
     }
-
-    private class GuiCard extends GridPane {
-        String text, color;
-        
-        Label lblText;
-        Button btnPick;
-        
-        public GuiCard(Card card) {
-            text = card.toString();
-            color = "#000000";
-            
-            lblText = new Label(text);
-            lblText.getStyleClass().add("GuiCard-text");
-            GridPane.setConstraints(lblText, 0,0);
-            
-            btnPick = new Button("Pick");
-            btnPick.getStyleClass().add("GuiCard-pick");
-            GridPane.setConstraints(btnPick, 0,1);
-            
-            getChildren().addAll(lblText, btnPick);
-        }
-        
-        public String getText() {
-            return text;   
-        }
-    }
-                    
-          
 
 }

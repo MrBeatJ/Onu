@@ -1,8 +1,7 @@
 package de.petri.onu.client;
 
-import de.petri.onu.helper.MessageConverter;
-import de.petri.onu.helper.ResourceLoader;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -11,10 +10,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import javax.swing.*;
 import java.io.*;
-import java.net.URL;
-import java.util.Scanner;
 
 public class Main extends Application {
 
@@ -39,7 +35,7 @@ public class Main extends Application {
     //Game
     private static Game game;
     private boolean gameRunning = false;
-    private final String JAR_PATH = "/server/Onu.jar";
+    public static final boolean PRODUCTION = false;
 
     public static void main(String[] args) {
 
@@ -58,7 +54,7 @@ public class Main extends Application {
         layout.setAlignment(Pos.TOP_CENTER);
 
         menu = new Scene(layout, WIDTH, HEIGHT);
-        menu.getStylesheets().add(PATH + "client/style.css");
+        menu.getStylesheets().add("/gfx/css/style.css");
 
         Label lblOnu = new Label("Onu");
         lblOnu.getStyleClass().add("menu-label");
@@ -73,14 +69,6 @@ public class Main extends Application {
         btnLobby.getStyleClass().add("menu-button");
         btnLobby.setOnAction(e -> {
             startServer();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
-            }
-            System.out.println("test");
-            game = new Game(window, "Admin", "127.0.0.1");
-            window.setScene(game.getLobby());
         });
 
         Button btnSettings = new Button("Settings");
@@ -109,7 +97,14 @@ public class Main extends Application {
         }
 
         try {
-            serverProc = Runtime.getRuntime().exec("cmd /c java -jar res/server/OnuServer.jar 9000");
+            String name =  new File(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName();
+            String path = "";
+            path = Main.class.getProtectionDomain().getCodeSource().getLocation().toString().substring(6);
+            path = path.substring(0, path.length() - name.length());
+            if(PRODUCTION == false) path += "nu/";
+            path += "OnuServer.jar";
+            System.out.println(path);
+            serverProc = Runtime.getRuntime().exec("cmd /c java -jar " + path + " 9000");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -157,6 +152,15 @@ public class Main extends Application {
                 String line = null;
                 try {
                     while ((line = wReader.readLine()) != null) {
+                        if(line.equals("ready")) {
+                            Platform.runLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    game = new Game(window, "Admin", "127.0.0.1");
+                                    window.setScene(game.getLobby());
+                                }
+                            });
+                        }
                         System.out.println(line);
                     }
                 } catch (IOException e) {

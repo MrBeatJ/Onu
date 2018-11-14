@@ -27,7 +27,7 @@ public class Lobby extends Scene {
 
     public Lobby(Stage window, Game game) {
         super(new StackPane(), Main.WIDTH, Main.HEIGHT);
-        getStylesheets().add(Main.PATH + "client/style.css");
+        getStylesheets().add("gfx/css/style.css");
 
         layout = new GridPane();
         layout.setAlignment(Pos.TOP_CENTER);
@@ -104,7 +104,7 @@ public class Lobby extends Scene {
         public LobbyPlayer(String name, int ping) {
             this.name = name;
             this.ping = ping;
-            getStylesheets().add(Main.PATH + "client/style.css");
+            getStylesheets().add("gfx/css/style.css");
             getStyleClass().add("LobbyPlayer-box");
             setPadding(new Insets(10,0,10,10));
 

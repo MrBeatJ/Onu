@@ -1,0 +1,10 @@
+back backside.png
+b cardFrontBlue.png
+r cardFrontRed.png
+g cardFrontGreen.png
+y cardFrontYellow.png
+nc cardFrontColorNone.png
+bc cardFrontColorBlue.png
+rc cardFrontColorRed.png
+gc cardFrontColorGreen.png
+yc cardFrontColorYellow.png

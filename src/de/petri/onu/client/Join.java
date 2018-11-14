@@ -25,7 +25,7 @@ public class Join extends Scene {
 
     public Join(Stage window) {
         super(new StackPane(),  Main.WIDTH, Main.HEIGHT);
-        getStylesheets().add(Main.PATH + "client/style.css");
+        getStylesheets().add("gfx/css/style.css");
 
         layout = new GridPane();
         layout.setPadding(new Insets(10,10,10,10));

@@ -54,6 +54,9 @@ public class Server implements Runnable {
     
     private Pile[] piles;
     private int startAmount = 7;
+
+    private int currentClient = 0;
+    private int direction = 1;
     
     //constructor
     public Server(int port) {
@@ -89,6 +92,7 @@ public class Server implements Runnable {
 
         //sets GameState to Lobby so players can join
         gs = GameState.LOBBY;
+        System.out.println("ready");
 
         Scanner s = new Scanner(System.in);
         while(running) {
@@ -256,23 +260,35 @@ public class Server implements Runnable {
             disconnect(id);
 
             //sets Admin
-            if(id.equals(admin)) {
-                setAdmin(clients.get(0).getID());
-            }
+            if(clients.size() > 0) {
+                if (id.equals(admin)) {
+                    setAdmin(clients.get(0).getID());
+                }
 
-            //sends the leave command to all players
-            broadcast(mc.tagged(mc.tagged(name, "name"), "leave"));
+                //sends the leave command to all players
+                broadcast(mc.tagged(mc.tagged(name, "name"), "leave"));
+            }
         }
         //START
         else if(data.startsWith("<start>")) {
             startGame();
+        }
+        //PUTCARD
+        else if(data.startsWith("<putcard>")) {
+            String user = mc.getBetweenTag(mc.getBetweenTag(data, "putcard")[0],"name")[0];
+            String card = mc.getBetweenTag(mc.getBetweenTag(data, "putcard")[0],"card")[0];
+
+            if(user.equals(clients.get(currentClient).getName())) {
+                putCard(new Card(card));
+                send(mc.tagged(card, "removecard"), packet.getAddress(), packet.getPort());
+            }
         }
         //if data doesn't fit in the protocol
         else {
             System.out.println("ERROR: " + data);
         }
     }
-    
+
     private void startGame() {
         gs = GameState.GAME;
 
@@ -285,7 +301,6 @@ public class Server implements Runnable {
         piles[0] = Pile.loadFromText(cardsFile);
         piles[0].shuffle();
 
-        //PATH + "game/cards.txt"
         //adds 7 cards to all players
         for(ServerClient client : clients) {
             for(int i = 0; i < startAmount; i++) {
@@ -303,7 +318,7 @@ public class Server implements Runnable {
                     e.printStackTrace();
                 }
             }
-            //broadcast(mc.tagged(mc.tagged(client.getName(), "name") + mc.tagged(String.valueOf(client.getHand().getCount()), "count"), "addplayer"));
+            sendCountUpdate(client);
         }
 
         //creates the put stack
@@ -314,6 +329,14 @@ public class Server implements Runnable {
     private void sendCard(ServerClient client, Card card) {
         String msg = mc.tagged(card.toString(), "addcard");
         send(msg, client.getAddress(), client.getPort());
+    }
+
+    private void putCard(Card card) {
+
+    }
+
+    private void sendCountUpdate(ServerClient client) {
+        broadcast(mc.tagged(mc.tagged(client.getName(), "name") + mc.tagged(String.valueOf(client.getHand().getCount()), "count"), "countupdate"));
     }
     
     private String getClientsNameTagged() {

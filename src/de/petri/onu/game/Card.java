@@ -18,7 +18,8 @@ public class Card {
 
         this.color = getColorFromString(color);
         this.value = getValueFromString(value);
-        
+
+
         text = card;
     }
 
