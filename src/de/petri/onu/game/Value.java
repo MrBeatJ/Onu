@@ -15,6 +15,7 @@ public enum Value {
     COLOR,
     DRAW,
     BLOCK,
-    SWITCH
+    SWITCH,
+    NONE;
 
 }

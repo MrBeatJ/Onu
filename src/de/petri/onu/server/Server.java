@@ -3,6 +3,7 @@ package de.petri.onu.server;
 import de.petri.onu.game.Card;
 import de.petri.onu.game.GameState;
 import de.petri.onu.game.Pile;
+import de.petri.onu.game.Value;
 import de.petri.onu.helper.MessageConverter;
 import de.petri.onu.helper.ResourceLoader;
 
@@ -57,7 +58,8 @@ public class Server implements Runnable {
 
     private int currentClient = 0;
     private int direction = 1;
-    
+    private final int maxPlayers = 8;
+
     //constructor
     public Server(int port) {
         gs = GameState.SETUP;
@@ -197,7 +199,9 @@ public class Server implements Runnable {
 
         //JOIN
         if(data.startsWith("<join>")) {
-            if(gs == GameState.LOBBY) {
+            if(clients.size() >= maxPlayers) {
+                send(mc.tagged("error","join"), packet.getAddress(), packet.getPort());
+            } else if(gs == GameState.LOBBY) {
                 UUID id = UUID.randomUUID();
                 String name = mc.getBetweenTag(mc.getBetweenTag(data, "join")[0], "name")[0];
 
@@ -275,12 +279,31 @@ public class Server implements Runnable {
         }
         //PUTCARD
         else if(data.startsWith("<putcard>")) {
-            String user = mc.getBetweenTag(mc.getBetweenTag(data, "putcard")[0],"name")[0];
-            String card = mc.getBetweenTag(mc.getBetweenTag(data, "putcard")[0],"card")[0];
+            String name = mc.getBetweenTag(mc.getBetweenTag(data, "putcard")[0],"name")[0];
+            String cardText = mc.getBetweenTag(mc.getBetweenTag(data, "putcard")[0],"card")[0];
 
-            if(user.equals(clients.get(currentClient).getName())) {
-                putCard(new Card(card));
-                send(mc.tagged(card, "removecard"), packet.getAddress(), packet.getPort());
+            if(name.equals(clients.get(currentClient).getName())) {
+                ServerClient client = getClient(name);
+                Card card = new Card(cardText);
+                if(putCard(client, card)) {
+                    if(card.getValue() == Value.COLOR) {
+                        send(mc.tagged("nc", "removecard"), packet.getAddress(), packet.getPort());
+                    } else {
+                        send(mc.tagged(cardText, "removecard"), packet.getAddress(), packet.getPort());
+                    }
+                    sendCountUpdate(client);
+                }
+            }
+        }
+        //DRAW
+        else if(data.startsWith("<drawcard>")) {
+            String name = mc.getBetweenTag(mc.getBetweenTag(data, "drawcard")[0],"name")[0];
+
+            if(name.equals(clients.get(currentClient).getName())) {
+                ServerClient client = getClient(name);
+                drawCard(client);
+                sendCountUpdate(client);
+                plusTurn(true);
             }
         }
         //if data doesn't fit in the protocol
@@ -323,7 +346,17 @@ public class Server implements Runnable {
 
         //creates the put stack
         piles[1] = new Pile();
-        piles[1].push(piles[0].pop());
+        do {
+            if(piles[0].size() <= 0) {
+                piles[0] = piles[1];
+                piles[0].shuffle();
+                piles[1] = new Pile();
+            }
+            piles[1].push(piles[0].pop());
+        } while(piles[1].peek().toString().equals("nc"));
+
+        broadcast(mc.tagged(piles[1].peek().toString(), "putcard"));
+        broadcast(mc.tagged(clients.get(currentClient).getName(), "turn"));
     }
     
     private void sendCard(ServerClient client, Card card) {
@@ -331,14 +364,78 @@ public class Server implements Runnable {
         send(msg, client.getAddress(), client.getPort());
     }
 
-    private void putCard(Card card) {
+    private boolean putCard(ServerClient client, Card card) {
+        if(piles[1].isAcceptable(card)) {
+            if(card.getValue() == Value.COLOR) {
+                client.getHand().removeCard(new Card("nc"));
+                piles[1].push(card);
+                broadcast(mc.tagged(card.toString(), "putcard"));
+            } else {
+                piles[1].push(client.getHand().removeCard(card));
+                broadcast(mc.tagged(card.toString(), "putcard"));
+                if(card.getValue() == Value.DRAW) {
+                    drawCard(getNextClient());
+                    drawCard(getNextClient());
+                    sendCountUpdate(getNextClient());
+                }
+            }
+            if(client.getHand().getCards().length <= 0) {
+                endGame(client);
+            }
+            nextTurn(card);
+            return true;
+        } else {
+            return false;
+        }
+    }
 
+    private void endGame(ServerClient winner) {
+        broadcast(mc.tagged(winner.getName(),"winner"));
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        stop();
+    }
+
+    private void drawCard(ServerClient client) {
+        if(piles[0].size() <= 0) {
+            Card card = piles[1].pop();
+            piles[0] = piles[1];
+            piles[0].shuffle();
+            piles[1] = new Pile();
+            piles[1].push(card);
+       }
+       Card card = piles[0].pop();
+       client.getHand().addCard(card);
+       send(mc.tagged(card.toString(), "addcard"), client.getAddress(), client.getPort());
     }
 
     private void sendCountUpdate(ServerClient client) {
         broadcast(mc.tagged(mc.tagged(client.getName(), "name") + mc.tagged(String.valueOf(client.getHand().getCount()), "count"), "countupdate"));
     }
-    
+
+    private ServerClient getNextClient() {
+        ServerClient client = null;
+        int i = currentClient + direction;
+        if(i < 0) {
+            i = clients.size() - 1;
+        } else if(i > clients.size() - 1) {
+            i = 0;
+        }
+        return clients.get(i);
+    }
+
+    public ServerClient getClient(String name) {
+        for (ServerClient client : clients) {
+            if(client.getName().equals(name)) {
+                return client;
+            }
+        }
+        return null;
+    }
+
     private String getClientsNameTagged() {
         String names = "";
         for (ServerClient client : clients) {
@@ -369,15 +466,32 @@ public class Server implements Runnable {
         admin = newAdmin.getID();
     }
 
-    private void sendUpdate() {
-        if (clients.size() <= 0) return;
-
-    }
-
     //sends the message to all connected clients
     private void broadcast(String message) {
         for(ServerClient client : clients) {
             send(message, client.getAddress(), client.getPort());
+        }
+    }
+
+    private void nextTurn(Card card) {
+        if(card.getValue() == Value.SWITCH)
+            direction *= -1;
+
+        if(card.getValue() == Value.BLOCK)
+            plusTurn(false);
+
+        plusTurn(true);
+    }
+
+    private void plusTurn(boolean send) {
+        currentClient += direction;
+        if(currentClient < 0) {
+            currentClient = clients.size() - 1;
+        } else if(currentClient > clients.size() - 1) {
+            currentClient = 0;
+        }
+        if(send) {
+            broadcast(mc.tagged(clients.get(currentClient).getName(), "turn"));
         }
     }
 
@@ -484,6 +598,7 @@ public class Server implements Runnable {
         gs = GameState.END;
         running = false;
         socket.close();
+        System.out.println("stopped");
     }
 
 }

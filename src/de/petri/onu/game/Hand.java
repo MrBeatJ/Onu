@@ -16,8 +16,13 @@ public class Hand {
         return cards.remove(index);
     }
     
-    public void removeCard(Card card) {
-        cards.remove(card);
+    public Card removeCard(Card card) {
+        for (int i = 0; i < cards.size(); i++) {
+            if(cards.get(i).toString().equals(card.toString())) {
+                cards.remove(i);
+            }
+        }
+        return card;
     }
 
     //gives back the amount of cards left in the hand

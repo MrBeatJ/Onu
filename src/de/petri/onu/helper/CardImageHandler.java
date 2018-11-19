@@ -83,8 +83,8 @@ public class CardImageHandler {
 
     public Image getCardImage(String text) {
 
-        if (text.equals("back")) {
-            return cardImages.get("back");
+        if (text.startsWith("nn")) {
+            return cardImages.get("n");
         } else if (text.endsWith("c")) {
             return cardImages.get(text);
         } else if (text.startsWith("r")) {

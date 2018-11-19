@@ -1,6 +1,7 @@
 package de.petri.onu.client;
 
 import de.petri.onu.game.Card;
+import de.petri.onu.game.Color;
 import de.petri.onu.game.Hand;
 import de.petri.onu.game.Value;
 import de.petri.onu.helper.CardImageHandler;
@@ -9,11 +10,10 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
@@ -37,13 +37,17 @@ public class Game extends Scene {
     private Stage window;
     private Lobby lobby;
 
-    private final GridPane layout;
+    private final BorderPane layout;
+    private HBox topLayout;
 
+    ScrollPane scrollPaneHand;
     HBox hBoxHand;
 
     //Game
     Hand hand;
-    LinkedList<GuiCard> guiCards;
+    ArrayList<GuiCard> guiCards;
+    Sideboard sideboard;
+    GuiStacks guiStacks;
     static CardImageHandler cardImageHandler;
     ArrayList<GamePlayer> players = new ArrayList<GamePlayer>();
 
@@ -55,8 +59,7 @@ public class Game extends Scene {
 
         cardImageHandler = new CardImageHandler();
 
-        layout = new GridPane();
-        layout.setAlignment(Pos.BOTTOM_CENTER);
+        layout = new BorderPane();
         layout.setPadding(new Insets(30,10,10,10));
         setRoot(layout);
 
@@ -94,8 +97,14 @@ public class Game extends Scene {
     private void process(String message) {
         //JOIN - answer
         if(message.startsWith("<join>")) {
-            if(mc.hasTag(message, "error")) {
-                //Server läuft bereits oder ist voll
+            if(message.startsWith("<join>error</join>")) {
+                close();
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        window.setScene(Main.getMenu());
+                    }
+                });
             } else {
                 //adds all other players
                 String[] otherPlayers = mc.getBetweenTag(mc.getBetweenTag(message, "join")[0], "cName");
@@ -148,8 +157,42 @@ public class Game extends Scene {
         else if(message.startsWith("<removecard>")) {
             removeCard(new Card(mc.getBetweenTag(message, "removecard")[0]));
         }
+        //COUNTUPDATE
+        else if(message.startsWith("<countupdate>")) {
+            String name = mc.getBetweenTag(mc.getBetweenTag(message, "countupdate")[0], "name")[0];
+            int count = Integer.parseInt(mc.getBetweenTag(mc.getBetweenTag(message, "countupdate")[0], "count")[0]);
+
+            sideboard.updateCount(name, count);
+        }
+        //PUTCARD
+        else if(message.startsWith("<putcard>")) {
+            String card = mc.getBetweenTag(message, "putcard")[0];
+            guiStacks.setPutStack(new Card(card));
+        }
+        //TURN
+        else if(message.startsWith("<turn>")) {
+            String name = mc.getBetweenTag(message, "turn")[0];
+            if(client.name.equals(name)) {
+                setActive(true);
+            } else {
+                setActive(false);
+            }
+        }
+        //WINNER
+        else if(message.startsWith("<winner>")) {
+            String winner = mc.getBetweenTag(message, "winner")[0];
+
+            Platform.runLater(new Runnable() {
+                @Override
+                public void run() {
+                    WinnerDialog.display(winner, window);
+                }
+            });
+
+            close();
+        }
     }
-    
+
     private void startGame() {
         Game g = this;
         Platform.runLater(new Runnable() {
@@ -160,33 +203,80 @@ public class Game extends Scene {
         });
 
         hand = new Hand();
-        guiCards = new LinkedList<GuiCard>();
+        guiCards = new ArrayList<GuiCard>();
+
+        sideboard = new Sideboard(players);
+        sideboard.setAlignment(Pos.CENTER);
+        BorderPane.setAlignment(sideboard, Pos.CENTER);
+
+        guiStacks = new GuiStacks(this);
+        guiStacks.setAlignment(Pos.BOTTOM_LEFT);
+        BorderPane.setAlignment(guiStacks, Pos.BOTTOM_LEFT);
+        BorderPane.setMargin(guiStacks, new Insets(110,0,0,80));
 
         hBoxHand = new HBox();
         hBoxHand.setSpacing(5);
+        hBoxHand.setStyle("-fx-background-color: #aaaaaa");
+        hBoxHand.setAlignment(Pos.BOTTOM_CENTER);
+        BorderPane.setAlignment(hBoxHand, Pos.BOTTOM_CENTER);
+
+        scrollPaneHand = new ScrollPane();
+        scrollPaneHand.setStyle("-fx-background-color: #aaaaaa");
+        scrollPaneHand.setHbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+        scrollPaneHand.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPaneHand.setContent(hBoxHand);
 
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                layout.getChildren().addAll(hBoxHand);
+                layout.setCenter(guiStacks);
+                layout.setLeft(sideboard);
+                layout.setBottom(scrollPaneHand);
             }
         });
     }
-                    
-    private void addCard(Card card) {
+
+    private synchronized void addCard(Card card) {
         hand.addCard(card);
-        guiCards.add(new GuiCard(card, this));
+        GuiCard guiCard = new GuiCard(card);
+        guiCard.setOnAction(e -> {
+            pickCard(card);
+        });
+        guiCards.add(guiCard);
 
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                hBoxHand.getChildren().add(guiCards.getLast());
+                hBoxHand.getChildren().addAll(guiCard);
             }
         });
+    }
+
+    private void setActive(boolean active) {
+        if(active) {
+            for (GuiCard guiCard : guiCards) {
+                guiCard.setActive(true);
+            }
+            guiStacks.setActive(true);
+        } else {
+            for (GuiCard guiCard : guiCards) {
+                guiCard.setActive(false);
+            }
+            guiStacks.setActive(false);
+        }
     }
                     
     public void pickCard(Card card) {
+        if(card.getValue() == Value.COLOR) {
+            Color color = ColorDialog.display();
+            card.setColor(color);
+        }
         String msg = mc.tagged(mc.tagged(client.name, "name") + mc.tagged(card.toString(), "card"), "putcard");
+        client.send(msg);
+    }
+
+    public void drawCard() {
+        String msg = mc.tagged(mc.tagged(client.name, "name"), "drawcard");
         client.send(msg);
     }
 
@@ -252,9 +342,12 @@ public class Game extends Scene {
                 lobby.removePlayer(name);
             }
         });
+
+        GamePlayer remove = null;
         for (GamePlayer player : players) {
-            if(player.getName().equals(name)) players.remove(player);
+            if(player.getName().equals(name)) remove = player;
         }
+        players.remove(remove);
     }
 
     public Lobby getLobby() {

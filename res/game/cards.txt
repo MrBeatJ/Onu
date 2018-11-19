@@ -10,6 +10,7 @@ r7
 r8
 r9
 rb
+rb
 rs
 rd
 //GREEN
@@ -23,6 +24,7 @@ g6
 g7
 g8
 g9
+gb
 gb
 gs
 gd
@@ -38,6 +40,7 @@ b7
 b8
 b9
 bb
+bb
 bs
 bd
 //YELLOW
@@ -51,6 +54,7 @@ y6
 y7
 y8
 y9
+yb
 yb
 ys
 yd

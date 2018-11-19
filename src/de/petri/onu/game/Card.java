@@ -5,22 +5,17 @@ public class Card {
     private Color color;
     private Value value;
     
-    private String text;
-
     public Card(Color color, Value value) {
         this.color = color;
         this.value = value;
     }
 
     public Card(String card) {
-        String color = card.substring(0,0).toLowerCase();
-        String value = card.substring(1,1).toLowerCase();
+        String color = String.valueOf(card.charAt(0));
+        String value = String.valueOf(card.charAt(1));
 
         this.color = getColorFromString(color);
         this.value = getValueFromString(value);
-
-
-        text = card;
     }
 
     private Color getColorFromString(String color) {
@@ -69,12 +64,68 @@ public class Card {
                 return Value.BLOCK;
             case "s":
                 return Value.SWITCH;
+            case "n":
+                return Value.NONE;
         }
         return null;
     }
-    
+
+    public void setColor(Color color) {
+        this.color = color;
+    }
+
     public String toString() {
-        return text;   
+        String text = "";
+
+        String c = "";
+        switch(color) {
+            case RED: c = "r";
+                break;
+            case BLUE: c = "b";
+                break;
+            case YELLOW: c = "y";
+                break;
+            case GREEN: c = "g";
+                break;
+            case NONE: c = "n";
+        }
+
+        String v = "";
+        switch(value) {
+            case ZERO: v = "0";
+                break;
+            case ONE: v = "1";
+                break;
+            case TWO: v = "2";
+                break;
+            case THREE: v = "3";
+                break;
+            case FOUR: v = "4";
+                break;
+            case FIVE: v = "5";
+                break;
+            case SIX: v = "6";
+                break;
+            case SEVEN: v = "7";
+                break;
+            case EIGHT: v = "8";
+                break;
+            case NINE: v = "9";
+                break;
+            case BLOCK: v = "b";
+                break;
+            case SWITCH: v = "s";
+                break;
+            case DRAW: v = "d";
+                break;
+            case COLOR: v = "c";
+                break;
+            case NONE: v = "n";
+                break;
+        }
+
+        text = c + v;
+        return text;
     }
 
     public Color getColor() {

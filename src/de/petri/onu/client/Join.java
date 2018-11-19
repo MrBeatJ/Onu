@@ -1,6 +1,7 @@
 package de.petri.onu.client;
 
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -30,8 +31,22 @@ public class Join extends Scene {
         layout = new GridPane();
         layout.setPadding(new Insets(10,10,10,10));
         layout.setVgap(8);
+        layout.setAlignment(Pos.CENTER);
         layout.setHgap(10);
         setRoot(layout);
+
+        //btnJoin
+        btnJoin = new Button("Join");
+        btnJoin.setDisable(true);
+        btnJoin.setOnAction(e -> {
+            String name = txtName.getText();
+            String address = txtAddress.getText();
+
+            if(!name.isEmpty() && !address.isEmpty()) {
+                Main.startGame(name, address);
+            }
+        });
+        GridPane.setConstraints(btnJoin, 1,2);
 
         //Name
         lblName = new Label("Name:");
@@ -71,6 +86,8 @@ public class Join extends Scene {
                 btnJoin.setDisable(false);
             }
         });
+        txtName.setText("Test");
+        txtAddress.setText("127.0.0.1");
         GridPane.setConstraints(txtAddress, 1, 1);
 
         //Menu
@@ -79,18 +96,6 @@ public class Join extends Scene {
             window.setScene(Main.getMenu());
         });
         GridPane.setConstraints(btnBack, 0,2);
-
-        btnJoin = new Button("Join");
-        btnJoin.setDisable(true);
-        btnJoin.setOnAction(e -> {
-            String name = txtName.getText();
-            String address = txtAddress.getText();
-
-            if(!name.isEmpty() && !address.isEmpty()) {
-                Main.startGame(name, address);
-            }
-        });
-        GridPane.setConstraints(btnJoin, 1,2);
 
         layout.getChildren().addAll(lblName, lblAddress, txtName, txtAddress, btnBack, btnJoin);
     }

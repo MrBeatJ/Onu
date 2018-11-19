@@ -25,6 +25,8 @@ public class Lobby extends Scene {
 
     LinkedList<LobbyPlayer> players = new LinkedList<LobbyPlayer>();
 
+    boolean isAdmin = false;
+
     public Lobby(Stage window, Game game) {
         super(new StackPane(), Main.WIDTH, Main.HEIGHT);
         getStylesheets().add("gfx/css/style.css");
@@ -68,6 +70,7 @@ public class Lobby extends Scene {
         players.add(new LobbyPlayer(name, ping));
         vBoxLP.getChildren().addAll(players.getLast());
         lblPlayerCount.setText("\t   " + players.size() + " of 8 Players");
+        if(isAdmin && players.size() > 1) btnStart.setDisable(false);
     }
 
     public void removePlayer(String name) {
@@ -76,6 +79,7 @@ public class Lobby extends Scene {
                 vBoxLP.getChildren().remove(players.get(i));
                 players.remove(i);
                 lblPlayerCount.setText("\t   " + players.size() + " of 8 Players");
+                if(isAdmin &&  players.size() < 2) btnStart.setDisable(true);
                 return;
             }
         }
@@ -88,7 +92,8 @@ public class Lobby extends Scene {
     }
 
     public void setAdmin(boolean isAdmin) {
-        if(isAdmin) {
+        this.isAdmin = isAdmin;
+        if(isAdmin && players.size() > 1) {
             btnStart.setDisable(false);
         } else {
             btnStart.setDisable(true);

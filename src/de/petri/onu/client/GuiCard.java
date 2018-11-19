@@ -2,6 +2,9 @@ package de.petri.onu.client;
 
 import de.petri.onu.game.Card;
 import de.petri.onu.game.Value;
+import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -17,15 +20,41 @@ public class GuiCard extends GridPane {
     ImageView imgCard, imgFace;
     Button btnPick;
 
-    private final double ratio = 3/4d;
-    private int height = 100;
-    private int width = (int) (((double) height) * ratio);
+    private final double ratio = 4/3d;
+    private int width = 75;
+    private int height = (int) (((double) width) * ratio);
+
+    public final int MAX_WIDTH = width;
 
     Game game;
 
-    public GuiCard(Card card, Game game) {
+    public GuiCard(Card card) {
+        loadCard(card);
+
+        //creates and adds the button to the GuiCard
+        btnPick = new Button("Pick");
+        btnPick.setMinWidth(width);
+        btnPick.getStyleClass().add("GuiCard-pick");
+        GridPane.setConstraints(btnPick, 0,1);
+        getChildren().add(btnPick);
+
+    }
+
+    public GuiCard(Card card, boolean btn) {
+        loadCard(card);
+
+        if(btn) {
+            //creates and adds the button to the GuiCard
+            btnPick = new Button("Pick");
+            btnPick.setMinWidth(width);
+            btnPick.getStyleClass().add("GuiCard-pick");
+            GridPane.setConstraints(btnPick, 0, 1);
+            getChildren().add(btnPick);
+        }
+    }
+
+    private void loadCard(Card card) {
         text = card.toString();
-        this.game = game;
 
         //creates the StackPane for the cards look
         paneCard = new StackPane();
@@ -48,35 +77,26 @@ public class GuiCard extends GridPane {
         //adds cardImage and faceImage to the StackPane
         paneCard.getChildren().addAll(imgCard, imgFace);
 
-        //creates and adds the button to the GuiCard
-        btnPick = new Button("Pick");
-        btnPick.setMinWidth(width);
-        btnPick.getStyleClass().add("GuiCard-pick");
-        btnPick.setOnAction(e -> {
-            game.pickCard(card);
-        });
-        GridPane.setConstraints(btnPick, 0,1);
+        getChildren().add(paneCard);
+    }
 
-        //adds everything to the GuiCard
-        getChildren().addAll(paneCard, btnPick);
+    public void setCard(Card card) {
+        text = card.toString();
+
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                loadCard(card);
+            }
+        });
+    }
+
+    public void setOnAction(EventHandler<ActionEvent> e) {
+        btnPick.setOnAction(e);
     }
 
     public int getCardHeight() {
         return height;
-    }
-
-    public void setCardHeight(int height) {
-        this.height = height;
-        this.width = (int) (((double) height) * ratio);
-
-        imgCard.setFitHeight(height);
-        imgCard.setFitWidth(width);
-
-        imgFace.setFitHeight(height);
-        imgFace.setFitWidth(width);
-
-        paneCard.setMaxHeight(height);
-        paneCard.setMaxWidth(width);
     }
 
     public int getCardWidth() {
@@ -85,5 +105,36 @@ public class GuiCard extends GridPane {
 
     public String getText() {
         return text;
+    }
+
+    public void setCardWidth(int width) {
+        this.width = width;
+        this.height = (int) (((double) width) * ratio);
+
+        imgCard.setFitHeight(height);
+        imgCard.setFitWidth(width);
+
+        imgFace.setFitHeight(height);
+        imgFace.setFitWidth(width);
+
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                if(btnPick != null) {
+                    btnPick.setMinWidth(width);
+                }
+            }
+        });
+
+        paneCard.setMaxHeight(height);
+        paneCard.setMaxWidth(width);
+    }
+
+    public void setActive(boolean b) {
+        if(b) {
+            btnPick.setDisable(false);
+        } else {
+            btnPick.setDisable(true);
+        }
     }
 }

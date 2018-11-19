@@ -7,7 +7,11 @@ import java.util.Stack;
 
 public class Pile {
 
-    private Stack<Card> cards = new Stack<Card>();
+    private Stack<Card> cards;
+
+    public Pile() {
+        cards = new Stack<Card>();
+    }
 
     //adds a card to the top
     public void push(Card card) {
@@ -17,6 +21,10 @@ public class Pile {
     //removes top card
     public Card pop() {
         return cards.pop();
+    }
+
+    public Card peek() {
+        return cards.peek();
     }
 
     //gives back the amount of cards left in the hand
@@ -54,6 +62,16 @@ public class Pile {
         } catch (IOException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public boolean isAcceptable(Card card) {
+        if(card.getColor() == cards.peek().getColor()) {
+            return true;
+        } if(card.getValue() == cards.peek().getValue() || card.getValue() == Value.COLOR) {
+            return true;
+        } else {
+            return false;
         }
     }
 }

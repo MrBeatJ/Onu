@@ -35,10 +35,13 @@ public class Main extends Application {
     //Game
     private static Game game;
     private boolean gameRunning = false;
-    public static final boolean PRODUCTION = false;
+    public static boolean DEVELOPMENT = false;
 
     public static void main(String[] args) {
 
+        if(args.length != 0 && args[0].equals("dev")) {
+            DEVELOPMENT = true;
+        }
         launch(args);
 
     }
@@ -47,6 +50,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception {
         window = primaryStage;
         window.setTitle("Onu");
+        window.setResizable(false);
 
         VBox layout = new VBox();
         layout.setPadding(new Insets(55,0,0,0));
@@ -101,10 +105,11 @@ public class Main extends Application {
             String path = "";
             path = Main.class.getProtectionDomain().getCodeSource().getLocation().toString().substring(6);
             path = path.substring(0, path.length() - name.length());
-            if(PRODUCTION == false) path += "nu/";
+            if(DEVELOPMENT == true) path += "nu/";
             path += "OnuServer.jar";
-            System.out.println(path);
+
             serverProc = Runtime.getRuntime().exec("cmd /c java -jar " + path + " 9000");
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -160,6 +165,9 @@ public class Main extends Application {
                                     window.setScene(game.getLobby());
                                 }
                             });
+                        }
+                        if(line.equals("stopped")) {
+                            stopServer();
                         }
                         System.out.println(line);
                     }
