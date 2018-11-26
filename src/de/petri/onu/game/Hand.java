@@ -39,4 +39,12 @@ public class Hand {
         }
         return cards;
     }
+
+    public int getEndValue() {
+        int sum = 0;
+        for (Card card : cards) {
+            sum += card.getEndValue();
+        }
+        return sum - 10;
+    }
 }

@@ -70,8 +70,7 @@ public class Server implements Runnable {
             socket = new DatagramSocket(port);
         } catch (SocketException e) {
             e.printStackTrace();
-            return;
-        }
+            return;        }
 
         mc = new MessageConverter();
 

@@ -185,7 +185,7 @@ public class Game extends Scene {
             Platform.runLater(new Runnable() {
                 @Override
                 public void run() {
-                    WinnerDialog.display(winner, window);
+                    WinnerDialog.display(winner, window, hand);
                 }
             });
 
