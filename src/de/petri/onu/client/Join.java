@@ -86,8 +86,6 @@ public class Join extends Scene {
                 btnJoin.setDisable(false);
             }
         });
-        txtName.setText("Test");
-        txtAddress.setText("127.0.0.1");
         GridPane.setConstraints(txtAddress, 1, 1);
 
         //Menu
